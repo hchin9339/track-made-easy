@@ -22,13 +22,21 @@ export default function Dashboard({
     <>
       <header className="page-heading">
         <div>
-          <p className="eyebrow">YOUR MONTH, AT A GLANCE</p>
-          <h1>Budget overview</h1>
+          <p className="eyebrow">FINANCIAL OVERVIEW</p>
+          <h1>Marketing budget</h1>
           <p className="muted">
-            A clear picture of where your marketing budget stands.
+            Track commitments, approved spend, and what is still available.
           </p>
         </div>
-        <MonthPicker month={month} />
+        <div className="heading-actions">
+          <MonthPicker month={month} />
+          <Link
+            className="button"
+            href={`/expenses?month=${month.slice(0, 7)}`}
+          >
+            <span aria-hidden="true">＋</span> Log expense
+          </Link>
+        </div>
       </header>
       <div className="summary-cards">
         {[
@@ -53,7 +61,10 @@ export default function Dashboard({
           ],
         ].map(([label, value, caption, style]) => (
           <section key={label as string} className={`summary-card ${style}`}>
-            <p>{label}</p>
+            <div className="summary-card-label">
+              <span className="metric-dot" aria-hidden="true" />
+              <p>{label}</p>
+            </div>
             <strong>{money(value as number)}</strong>
             <small>{caption}</small>
           </section>
@@ -76,6 +87,7 @@ export default function Dashboard({
       <section className="panel">
         <div className="panel-heading">
           <div>
+            <p className="eyebrow">ALLOCATIONS</p>
             <h2>Budget by category</h2>
             <small>
               {monthLabel} · Committed and actual spend shown separately
@@ -166,7 +178,10 @@ export default function Dashboard({
       <div className="dashboard-bottom">
         <section className="panel">
           <div className="panel-heading">
-            <h2>Recent expenses</h2>
+            <div>
+              <p className="eyebrow">ACTIVITY</p>
+              <h2>Recent expenses</h2>
+            </div>
             <Link href={`/expenses?month=${month.slice(0, 7)}`}>
               View all ↗
             </Link>
