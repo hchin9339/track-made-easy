@@ -18,6 +18,7 @@ The application requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_AN
 - `pnpm test`: PRD arithmetic, cents precision, unbudgeted spend, empty totals.
 - `pnpm build`
 - `pnpm test:workflow`: production browser workflow against a disposable local PostgREST simulator. Run after building. Install a Playwright browser (`pnpm exec playwright install chromium`), or set `CHROME_PATH` to an installed Chrome executable. This test does **not** verify live Supabase permissions or deployment.
+- `pnpm test:live`: runs the PRD success scenario against the configured Supabase project, then removes only its uniquely named acceptance records.
 - `pnpm verify:database`: read-only check of the configured Supabase schema.
 
 For final acceptance, repeat `docs/TEST_PLAN.md` against the deployed project with a fresh category or isolated month; seed expenses otherwise contribute to the totals. Confirm the values survive a page reload and verify individual actual expense details.
