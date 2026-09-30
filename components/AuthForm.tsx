@@ -4,7 +4,7 @@ import { signIn, signUp, type AuthState } from "@/lib/actions/auth";
 import LogoMark from "@/components/LogoMark";
 
 const initial: AuthState = {};
-export default function AuthForm() {
+export default function AuthForm({ next }: { next?: string }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [signInState, signInAction, signingIn] = useActionState(
     signIn,
@@ -43,6 +43,7 @@ export default function AuthForm() {
         </button>
       </div>
       <form action={mode === "signin" ? signInAction : signUpAction}>
+        <input type="hidden" name="next" value={next ?? ""} />
         <label>
           Email
           <input name="email" type="email" autoComplete="email" required />

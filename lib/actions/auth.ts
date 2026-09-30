@@ -7,6 +7,11 @@ import { workspaceContext } from "@/lib/data";
 
 export type AuthState = { error?: string; message?: string };
 
+function safeNext(form: FormData) {
+  const next = String(form.get("next") ?? "");
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
 export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get("email") ?? "")
     .trim()
@@ -15,7 +20,7 @@ export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
   const db = await createClient();
   const { error } = await db.auth.signInWithPassword({ email, password });
   if (error) return { error: "Email or password is incorrect." };
-  redirect("/");
+  redirect(safeNext(form));
 }
 
 export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
@@ -32,7 +37,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     return {
       message: "Check your email to confirm your account, then sign in.",
     };
-  redirect("/onboarding");
+  redirect(safeNext(form) === "/" ? "/onboarding" : safeNext(form));
 }
 
 export async function signOut() {
