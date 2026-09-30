@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { database } from "@/lib/data";
+import { workspaceContext } from "@/lib/data";
 
 export type Result = { ok: boolean; message: string };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -52,9 +52,17 @@ function check(error: { message: string } | null) {
     );
 }
 
+async function authorized(manager = false) {
+  const context = await workspaceContext({ redirectToLogin: false });
+  if (!context?.active) throw new Error("Sign in and select a team workspace.");
+  if (manager && context.active.role === "member")
+    throw new Error("Only a team owner or admin can do that.");
+  return context;
+}
+
 export async function saveExpense(form: FormData): Promise<Result> {
   return run(async () => {
-    const db = database();
+    const { db, user, active } = await authorized();
     const category_id = id(form, "category_id");
     const expense_date = date(form, "expense_date");
     const month = expense_date.slice(0, 7) + "-01";
@@ -64,6 +72,7 @@ export async function saveExpense(form: FormData): Promise<Result> {
       .from("budgets")
       .select("id")
       .eq("category_id", category_id)
+      .eq("team_id", active.team.id)
       .eq("month", month)
       .maybeSingle();
     check(budget.error);
@@ -76,13 +85,26 @@ export async function saveExpense(form: FormData): Promise<Result> {
       description: text(form, "description"),
       notes: text(form, "notes", 2000),
       budget_id: budget.data?.id ?? null,
+      team_id: active.team.id,
+      user_id: user.id,
     };
     if (form.get("id")) {
       // Changing approved values requires a fresh human approval.
+      const editable = {
+        category_id: values.category_id,
+        expense_date: values.expense_date,
+        month: values.month,
+        vendor: values.vendor,
+        amount: values.amount,
+        description: values.description,
+        notes: values.notes,
+        budget_id: values.budget_id,
+      };
       const result = await db
         .from("expenses")
-        .update({ ...values, status: "committed" })
+        .update({ ...editable, status: "committed" })
         .eq("id", id(form))
+        .eq("team_id", active.team.id)
         .select("id")
         .single();
       check(result.error);
@@ -96,10 +118,12 @@ export async function saveExpense(form: FormData): Promise<Result> {
 }
 export async function approveExpense(form: FormData): Promise<Result> {
   return run(async () => {
-    const result = await database()
+    const { db, active } = await authorized(true);
+    const result = await db
       .from("expenses")
       .update({ status: "actual" })
       .eq("id", id(form))
+      .eq("team_id", active.team.id)
       .eq("status", "committed")
       .select("id")
       .maybeSingle();
@@ -112,10 +136,12 @@ export async function approveExpense(form: FormData): Promise<Result> {
 }
 export async function deleteExpense(form: FormData): Promise<Result> {
   return run(async () => {
-    const result = await database()
+    const { db, active } = await authorized(true);
+    const result = await db
       .from("expenses")
       .delete()
       .eq("id", id(form))
+      .eq("team_id", active.team.id)
       .select("id")
       .single();
     check(result.error);
@@ -126,25 +152,28 @@ export async function upsertBudget(form: FormData): Promise<Result> {
     const month = date(form, "month");
     if (!month.endsWith("-01"))
       throw new Error("Select the first day of the budget month.");
-    const result = await database()
-      .from("budgets")
-      .upsert(
-        {
-          category_id: id(form, "category_id"),
-          month,
-          approved_amount: amount(form, "approved_amount", true),
-        },
-        { onConflict: "category_id,month" },
-      );
+    const { db, user, active } = await authorized(true);
+    const result = await db.from("budgets").upsert(
+      {
+        category_id: id(form, "category_id"),
+        team_id: active.team.id,
+        user_id: user.id,
+        month,
+        approved_amount: amount(form, "approved_amount", true),
+      },
+      { onConflict: "team_id,category_id,month" },
+    );
     check(result.error);
   });
 }
 export async function deleteBudget(form: FormData): Promise<Result> {
   return run(async () => {
-    const result = await database()
+    const { db, active } = await authorized(true);
+    const result = await db
       .from("budgets")
       .delete()
       .eq("id", id(form))
+      .eq("team_id", active.team.id)
       .select("id")
       .single();
     check(result.error);
@@ -154,31 +183,36 @@ export async function saveCategory(form: FormData): Promise<Result> {
   return run(async () => {
     const name = text(form, "name", 80);
     if (!name) throw new Error("Category name is required.");
-    const db = database();
+    const { db, user, active } = await authorized(true);
     const result = form.get("id")
       ? await db
           .from("categories")
           .update({ name })
           .eq("id", id(form))
+          .eq("team_id", active.team.id)
           .select("id")
           .single()
-      : await db.from("categories").insert({ name });
+      : await db
+          .from("categories")
+          .insert({ name, team_id: active.team.id, user_id: user.id });
     check(result.error);
   });
 }
 export async function deleteCategory(form: FormData): Promise<Result> {
   return run(async () => {
-    const db = database();
+    const { db, active } = await authorized(true);
     const category = id(form);
     const results = await Promise.all([
       db
         .from("expenses")
         .select("id", { count: "exact", head: true })
-        .eq("category_id", category),
+        .eq("category_id", category)
+        .eq("team_id", active.team.id),
       db
         .from("budgets")
         .select("id", { count: "exact", head: true })
-        .eq("category_id", category),
+        .eq("category_id", category)
+        .eq("team_id", active.team.id),
     ]);
     for (const result of results) {
       check(result.error);
@@ -191,6 +225,7 @@ export async function deleteCategory(form: FormData): Promise<Result> {
       .from("categories")
       .delete()
       .eq("id", category)
+      .eq("team_id", active.team.id)
       .select("id")
       .single();
     check(result.error);

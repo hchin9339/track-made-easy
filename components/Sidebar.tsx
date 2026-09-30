@@ -1,11 +1,25 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
-export default function Sidebar() {
+import { useEffect, useState } from "react";
+import { selectTeam, signOut } from "@/lib/actions/auth";
+import type { Workspace } from "@/lib/types";
+export default function Sidebar({
+  workspace,
+}: {
+  workspace: Workspace | null;
+}) {
   const path = usePathname();
   const search = useSearchParams();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, []);
+  if (!workspace) return null;
   return (
     <>
       <button
@@ -13,23 +27,32 @@ export default function Sidebar() {
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-controls="navigation"
+        aria-label={open ? "Close navigation" : "Open navigation"}
       >
-        ☰ Menu
+        <span aria-hidden="true">☰</span> Menu
       </button>
+      {open && (
+        <button
+          className="nav-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setOpen(false)}
+        />
+      )}
       <aside id="navigation" className={`sidebar ${open ? "open" : ""}`}>
         <Link className="brand" href="/">
-          <span className="brand-mark">t</span>
+          <span className="brand-mark">T</span>
           <span>
-            track<span className="brand-sub">made easy</span>
+            Track<span className="brand-sub">Made Easy</span>
           </span>
         </Link>
         <p className="nav-label">WORKSPACE</p>
         <nav>
           {[
-            ["/", "◫", "Dashboard"],
-            ["/budgets", "▤", "Budgets"],
+            ["/", "⌂", "Dashboard"],
+            ["/budgets", "$", "Budgets"],
             ["/expenses", "↗", "Expenses"],
-            ["/categories", "◇", "Categories"],
+            ["/categories", "#", "Categories"],
+            ["/team", "◇", "Team"],
           ].map(([href, icon, title]) => (
             <Link
               key={href}
@@ -45,16 +68,44 @@ export default function Sidebar() {
               href={`${href}${search.get("month") ? `?month=${search.get("month")}` : ""}`}
               onClick={() => setOpen(false)}
             >
-              <span>{icon}</span>
+              <span className="nav-icon" aria-hidden="true">
+                {icon}
+              </span>
               {title}
             </Link>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <span className="avatar">M</span>
+          <span className="avatar">
+            {workspace.team.name.slice(0, 2).toUpperCase()}
+          </span>
           <div>
-            <strong>Marcom team</strong>
-            <small>Shared demo workspace</small>
+            {workspace.memberships.length > 1 ? (
+              <form action={selectTeam}>
+                <select
+                  name="team_id"
+                  aria-label="Active workspace"
+                  value={workspace.team.id}
+                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                >
+                  {workspace.memberships.map(({ team }) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </form>
+            ) : (
+              <strong>{workspace.team.name}</strong>
+            )}
+            <small>
+              {workspace.role} · {workspace.userEmail}
+            </small>
+            <form action={signOut}>
+              <button className="signout" type="submit">
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
       </aside>

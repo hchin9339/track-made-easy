@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { database } from "@/lib/data";
+import { workspaceContext } from "@/lib/data";
 import { money } from "@/lib/format";
 export const dynamic = "force-dynamic";
 export default async function Page({
@@ -10,11 +10,14 @@ export default async function Page({
 }) {
   const { id } = await params;
   if (!/^[\da-f-]{36}$/i.test(id)) notFound();
-  const db = database();
+  const context = await workspaceContext();
+  if (!context?.active) notFound();
+  const { db, active } = context;
   const { data: expense, error } = await db
     .from("expenses")
     .select("*")
     .eq("id", id)
+    .eq("team_id", active.team.id)
     .maybeSingle();
   if (error) throw new Error("Could not load expense.");
   if (!expense) notFound();
@@ -22,6 +25,7 @@ export default async function Page({
     .from("categories")
     .select("name")
     .eq("id", expense.category_id)
+    .eq("team_id", active.team.id)
     .single();
   return (
     <>

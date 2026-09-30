@@ -30,6 +30,7 @@ export function Tracker({
   const [editing, setEditing] = useState<Expense | null>(null);
   const [open, setOpen] = useState(false);
   const categories = data.categories;
+  const manager = data.workspace?.role !== "member";
   const name = (id: string) =>
     categories.find((c) => c.id === id)?.name ?? "Category";
   function submit(
@@ -79,7 +80,7 @@ export function Tracker({
     <>
       <header className="page-heading">
         <div>
-          <p className="eyebrow">MARCOM WORKSPACE</p>
+          <p className="eyebrow">MARKETING OPERATIONS</p>
           <h1>
             {section === "expenses"
               ? "Expenses"
@@ -116,6 +117,12 @@ export function Tracker({
           className={`notice ${notice.ok ? "success" : "failure"}`}
         >
           {notice.message}
+        </div>
+      )}
+      {!manager && section !== "expenses" && (
+        <div className="notice role-note" role="status">
+          You have member access. Team owners and admins manage categories and
+          budgets.
         </div>
       )}
       {section === "expenses" && (
@@ -261,7 +268,7 @@ export function Tracker({
               </div>
             ) : (
               <div className="table-scroll">
-                <table>
+                <table className="expense-table">
                   <thead>
                     <tr>
                       <th>Vendor / expense</th>
@@ -275,53 +282,65 @@ export function Tracker({
                   <tbody>
                     {data.expenses.map((e) => (
                       <tr key={e.id}>
-                        <td>
+                        <td data-label="Expense">
                           <Link className="vendor" href={`/expenses/${e.id}`}>
                             {e.vendor}
                           </Link>
                           <small>{e.description}</small>
                         </td>
-                        <td>{name(e.category_id)}</td>
-                        <td>{e.expense_date}</td>
-                        <td className="numeric">{money(Number(e.amount))}</td>
-                        <td>
+                        <td data-label="Category">{name(e.category_id)}</td>
+                        <td data-label="Date">{e.expense_date}</td>
+                        <td data-label="Amount" className="numeric">
+                          {money(Number(e.amount))}
+                        </td>
+                        <td data-label="Status">
                           <span className={`badge ${e.status}`}>
                             {e.status === "actual" ? "Actual" : "Committed"}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Actions">
                           <div className="row-actions">
-                            <button
-                              className="small secondary"
-                              disabled={pending || e.status === "actual"}
-                              onClick={() => record(approveExpense, e.id)}
-                            >
-                              {e.status === "actual" ? "Approved" : "Approve"}
-                            </button>
-                            <button
-                              className="text-button"
-                              disabled={pending}
-                              onClick={() => {
-                                setEditing(e);
-                                setOpen(true);
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              className="text-button danger"
-                              disabled={pending}
-                              onClick={() =>
-                                record(
-                                  deleteExpense,
-                                  e.id,
-                                  `Delete ${e.vendor} expense for ${money(Number(e.amount))}? This cannot be undone.`,
-                                )
-                              }
-                            >
-                              Delete
-                            </button>
+                            {manager && (
+                              <button
+                                className="small secondary"
+                                disabled={pending || e.status === "actual"}
+                                onClick={() => record(approveExpense, e.id)}
+                              >
+                                {e.status === "actual" ? "Approved" : "Approve"}
+                              </button>
+                            )}
+                            {(manager ||
+                              e.user_id === data.workspace?.userId) && (
+                              <button
+                                className="text-button"
+                                disabled={pending}
+                                onClick={() => {
+                                  setEditing(e);
+                                  setOpen(true);
+                                  window.scrollTo({
+                                    top: 0,
+                                    behavior: "smooth",
+                                  });
+                                }}
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {manager && (
+                              <button
+                                className="text-button danger"
+                                disabled={pending}
+                                onClick={() =>
+                                  record(
+                                    deleteExpense,
+                                    e.id,
+                                    `Delete ${e.vendor} expense for ${money(Number(e.amount))}? This cannot be undone.`,
+                                  )
+                                }
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -347,7 +366,7 @@ export function Tracker({
                 submit(upsertBudget, new FormData(e.currentTarget));
               }}
             >
-              <fieldset disabled={pending}>
+              <fieldset disabled={pending || !manager}>
                 <input type="hidden" name="month" value={month} />
                 <div className="inline-form">
                   <label>
@@ -403,7 +422,7 @@ export function Tracker({
               </div>
             ) : (
               <div className="table-scroll">
-                <table>
+                <table className="budget-edit-table">
                   <thead>
                     <tr>
                       <th>Category</th>
@@ -413,8 +432,8 @@ export function Tracker({
                   <tbody>
                     {data.budgets.map((b) => (
                       <tr key={b.id}>
-                        <td>{name(b.category_id)}</td>
-                        <td>
+                        <td data-label="Category">{name(b.category_id)}</td>
+                        <td data-label="Approved amount and actions">
                           <form
                             className="inline-form"
                             onSubmit={(e) => {
@@ -440,18 +459,19 @@ export function Tracker({
                               max="9999999999.99"
                               step="0.01"
                               defaultValue={b.approved_amount}
+                              disabled={!manager}
                               key={b.approved_amount}
                             />
                             <button
                               className="secondary small"
-                              disabled={pending}
+                              disabled={pending || !manager}
                             >
                               Save
                             </button>
                             <button
                               type="button"
                               className="text-button danger"
-                              disabled={pending}
+                              disabled={pending || !manager}
                               onClick={() =>
                                 record(
                                   deleteBudget,
@@ -484,7 +504,7 @@ export function Tracker({
                 submit(saveCategory, new FormData(form), () => form.reset());
               }}
             >
-              <fieldset disabled={pending}>
+              <fieldset disabled={pending || !manager}>
                 <div className="inline-form">
                   <label>
                     Category name
@@ -529,14 +549,18 @@ export function Tracker({
                     required
                     maxLength={80}
                     defaultValue={c.name}
+                    disabled={!manager}
                   />
-                  <button className="secondary small" disabled={pending}>
+                  <button
+                    className="secondary small"
+                    disabled={pending || !manager}
+                  >
                     Save
                   </button>
                   <button
                     type="button"
                     className="text-button danger"
-                    disabled={pending}
+                    disabled={pending || !manager}
                     onClick={() =>
                       record(
                         deleteCategory,
