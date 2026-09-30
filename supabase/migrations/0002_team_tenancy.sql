@@ -98,7 +98,7 @@ create or replace function public.create_team(team_name text)
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   new_team_id uuid;
