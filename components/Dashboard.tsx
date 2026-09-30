@@ -22,10 +22,10 @@ export default function Dashboard({
     <>
       <header className="page-heading">
         <div>
-          <p className="eyebrow">FINANCIAL OVERVIEW</p>
-          <h1>Marketing budget</h1>
+          <p className="eyebrow">YOUR MONTH, AT A GLANCE</p>
+          <h1>Budget overview</h1>
           <p className="muted">
-            Track commitments, approved spend, and what is still available.
+            A clear picture of where your marketing budget stands.
           </p>
         </div>
         <div className="heading-actions">
@@ -34,7 +34,7 @@ export default function Dashboard({
             className="button"
             href={`/expenses?month=${month.slice(0, 7)}`}
           >
-            <span aria-hidden="true">＋</span> Log expense
+            <span aria-hidden="true">＋</span> New expense
           </Link>
         </div>
       </header>

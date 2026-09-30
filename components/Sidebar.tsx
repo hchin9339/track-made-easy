@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { selectTeam, signOut } from "@/lib/actions/auth";
 import type { Workspace } from "@/lib/types";
+import LogoMark from "@/components/LogoMark";
 export default function Sidebar({
   workspace,
 }: {
@@ -20,8 +21,39 @@ export default function Sidebar({
     return () => window.removeEventListener("keydown", close);
   }, []);
   if (!workspace) return null;
+  const navItems = [
+    ["/", "⌂", "Dashboard"],
+    ["/budgets", "$", "Budgets"],
+    ["/expenses", "↗", "Expenses"],
+    ["/categories", "#", "Categories"],
+    ["/team", "◇", "Team"],
+  ];
+  const hrefFor = (href: string) =>
+    `${href}${search.get("month") ? `?month=${search.get("month")}` : ""}`;
+  const isActive = (href: string) =>
+    href === "/"
+      ? path === "/" || path === "/dashboard"
+      : path.startsWith(href);
   return (
     <>
+      <header className="mobile-appbar">
+        <button
+          className="mobile-menu"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-controls="navigation"
+          aria-label={open ? "Close navigation" : "Open navigation"}
+        >
+          ☰
+        </button>
+        <Link className="mobile-brand" href="/">
+          <LogoMark />
+          <span>trackmade easy</span>
+        </Link>
+        <Link className="mobile-team" href="/team" aria-label="Team settings">
+          {workspace.team.name.slice(0, 1).toUpperCase()}
+        </Link>
+      </header>
       <button
         className="menu-button secondary"
         onClick={() => setOpen(!open)}
@@ -40,32 +72,22 @@ export default function Sidebar({
       )}
       <aside id="navigation" className={`sidebar ${open ? "open" : ""}`}>
         <Link className="brand" href="/">
-          <span className="brand-mark">T</span>
+          <LogoMark />
           <span>
-            Track<span className="brand-sub">Made Easy</span>
+            track<span className="brand-sub">made easy</span>
           </span>
         </Link>
+        <div className="governance-label">
+          <span>Budget governance</span>
+          <small>{workspace.team.name}</small>
+        </div>
         <p className="nav-label">WORKSPACE</p>
         <nav>
-          {[
-            ["/", "⌂", "Dashboard"],
-            ["/budgets", "$", "Budgets"],
-            ["/expenses", "↗", "Expenses"],
-            ["/categories", "#", "Categories"],
-            ["/team", "◇", "Team"],
-          ].map(([href, icon, title]) => (
+          {navItems.map(([href, icon, title]) => (
             <Link
               key={href}
-              className={
-                (
-                  href === "/"
-                    ? path === "/" || path === "/dashboard"
-                    : path.startsWith(href)
-                )
-                  ? "active"
-                  : ""
-              }
-              href={`${href}${search.get("month") ? `?month=${search.get("month")}` : ""}`}
+              className={isActive(href) ? "active" : ""}
+              href={hrefFor(href)}
               onClick={() => setOpen(false)}
             >
               <span className="nav-icon" aria-hidden="true">
@@ -109,6 +131,18 @@ export default function Sidebar({
           </div>
         </div>
       </aside>
+      <nav className="mobile-bottom-nav" aria-label="Primary navigation">
+        {navItems.slice(0, 4).map(([href, icon, title]) => (
+          <Link
+            key={href}
+            className={isActive(href) ? "active" : ""}
+            href={hrefFor(href)}
+          >
+            <span aria-hidden="true">{icon}</span>
+            <small>{title}</small>
+          </Link>
+        ))}
+      </nav>
     </>
   );
 }

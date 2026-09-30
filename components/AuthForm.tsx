@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { signIn, signUp, type AuthState } from "@/lib/actions/auth";
+import LogoMark from "@/components/LogoMark";
 
 const initial: AuthState = {};
 export default function AuthForm() {
@@ -17,7 +18,7 @@ export default function AuthForm() {
   return (
     <div className="auth-card">
       <div className="auth-brand">
-        <span className="brand-mark">T</span>
+        <LogoMark />
         <strong>Track Made Easy</strong>
       </div>
       <p className="eyebrow">TEAM BUDGET CONTROL</p>

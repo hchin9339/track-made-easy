@@ -15,6 +15,20 @@ export default async function RootLayout({
   const workspace = await currentWorkspace();
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        {/* Manrope is the typeface specified by the approved Stitch design. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <Suspense>
           <Sidebar workspace={workspace} />
@@ -23,7 +37,7 @@ export default async function RootLayout({
           {workspace && (
             <div className="topbar">
               <span>
-                Workspace <span className="crumb">/</span>{" "}
+                Budget governance <span className="crumb">/</span>{" "}
                 <strong>{workspace.team.name}</strong>
               </span>
               <span className="topbar-status">
