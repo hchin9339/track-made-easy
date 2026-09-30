@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import CreateTeamForm from "@/components/CreateTeamForm";
+import RenameTeamForm from "@/components/RenameTeamForm";
 import { workspaceContext } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,17 @@ export default async function TeamPage() {
           {count ?? 1} team member{count === 1 ? "" : "s"}. Owners and admins
           control budgets and approvals; members can record expenses.
         </p>
+      </section>
+      <section className="panel form-panel">
+        <h2>Workspace details</h2>
+        <p className="muted">
+          The team name appears in the navigation and on every budget view.
+        </p>
+        {context.active.role === "owner" ? (
+          <RenameTeamForm currentName={context.active.team.name} />
+        ) : (
+          <p className="muted">Only the team owner can change this name.</p>
+        )}
       </section>
       <section className="panel form-panel">
         <h2>Create another workspace</h2>

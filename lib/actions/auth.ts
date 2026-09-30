@@ -63,6 +63,32 @@ export async function createTeam(
   redirect("/");
 }
 
+export async function renameTeam(
+  _: AuthState,
+  form: FormData,
+): Promise<AuthState> {
+  const name = String(form.get("name") ?? "").trim();
+  if (!name) return { error: "Enter a team name." };
+  if (name.length > 80)
+    return { error: "Keep the team name to 80 characters or fewer." };
+
+  const context = await workspaceContext({ redirectToLogin: false });
+  if (!context?.active) redirect("/login");
+  if (context.active.role !== "owner")
+    return { error: "Only the team owner can rename this workspace." };
+  if (name === context.active.team.name)
+    return { message: "The workspace name is already up to date." };
+
+  const { error } = await context.db
+    .from("teams")
+    .update({ name })
+    .eq("id", context.active.team.id);
+  if (error) return { error: "Could not rename the workspace. Try again." };
+
+  revalidatePath("/", "layout");
+  return { message: "Workspace renamed successfully." };
+}
+
 export async function selectTeam(form: FormData) {
   const teamId = String(form.get("team_id") ?? "");
   const context = await workspaceContext({ redirectToLogin: false });
