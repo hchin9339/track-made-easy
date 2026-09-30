@@ -29,8 +29,7 @@ export const stripe = new Stripe(
 
 // Set when this app was provisioned through a Connect platform
 export const CONNECT_ACCOUNT_ID = process.env.STRIPE_CONNECT_ACCOUNT_ID as
-  | string
-  | undefined;
+  string | undefined;
 
 // Platform fee percentage (0–100). Only active when CONNECT_ACCOUNT_ID is set.
 export const PLATFORM_FEE_PERCENT = CONNECT_ACCOUNT_ID
@@ -77,8 +76,8 @@ export async function createCheckoutSession({
           },
         }
       : mode === "subscription"
-      ? { subscription_data: { metadata: { userId } } }
-      : {}),
+        ? { subscription_data: { metadata: { userId } } }
+        : {}),
 
     // One-time payment platform fee — calculated after price lookup
     // (handled in checkout route where we have the amount)

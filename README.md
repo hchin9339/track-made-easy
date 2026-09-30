@@ -1,41 +1,31 @@
-# vibe-stack-supabase
+# Track Made Easy
 
-Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provision, build.
+A demo-first Marcom budget tracker built with Next.js and Supabase. The homepage shows monthly approved budgets, committed expenses, actual expenses, and remaining balances. Expenses start committed; a human approval moves them to actual. Editing an approved expense sends it back for review.
 
-## Stack
+## Run locally
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 15 (App Router, React 19, Server Actions) |
-| Language | TypeScript strict |
-| Styles | Tailwind CSS v4 (CSS-first, no config file) |
-| Auth + DB | Supabase (`@supabase/ssr`) |
-| Package manager | Bun |
-| Deploy | Vercel |
+1. Install dependencies with `pnpm install` (Node.js 22.18+).
+2. Sign into the account that owns the existing Vercel project, then run `vercel link --project track-made-easy` and `vercel env pull .env.local`.
+3. Run `pnpm verify:database` to check the provisioned tables. If the schema is missing, apply `supabase/migrations/0001_init.sql` through the project's Supabase SQL editor or authenticated migration tooling. Do not recreate tables that already exist.
+4. Run `pnpm dev` and open localhost:3000.
 
-## Quick start
+The application requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Keys are never committed. All writes use named server actions against the existing categories, budgets, and expenses tables. This release follows the docs' shared, public demo permission model; authentication and team roles are a later sprint.
 
-```bash
-bun install
-cp .env.example .env.local   # fill in your Supabase keys
-bun dev
-```
+## Checks
 
-Open http://localhost:3000. Edit `app/page.tsx` to start building.
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`: PRD arithmetic, cents precision, unbudgeted spend, empty totals.
+- `pnpm build`
+- `pnpm test:workflow`: production browser workflow against a disposable local PostgREST simulator. Run after building. Install a Playwright browser (`pnpm exec playwright install chromium`), or set `CHROME_PATH` to an installed Chrome executable. This test does **not** verify live Supabase permissions or deployment.
+- `pnpm verify:database`: read-only check of the configured Supabase schema.
 
-## Provisioning a new project
+For final acceptance, repeat `docs/TEST_PLAN.md` against the deployed project with a fresh category or isolated month; seed expenses otherwise contribute to the totals. Confirm the values survive a page reload and verify individual actual expense details.
 
-Use the `/new-vibe-project <name>` skill (see `claude-dotfiles` repo) which:
-1. Clones this template and renames it
-2. Creates a new GitHub repo and pushes
-3. Creates a Supabase project and injects URL + anon key
-4. Creates a Vercel project linked to the GitHub repo
-5. Triggers first deploy and returns the preview URL
+## Deployment
 
-## Working with AI
+Deploy only by committing and pushing `main`; Vercel deploys from GitHub. Do not use `vercel deploy`. Set the repo's Git author as specified in `AGENTS.md`.
 
-See [CLAUDE.md](CLAUDE.md) for conventions. This repo is pre-wired for gstack — start with `/office-hours`.
+## Data behavior
 
-## Switching to Neon
-
-If you need Postgres without Supabase (e.g. prefer Drizzle ORM + Clerk for auth), a `vibe-stack-neon` variant is planned. For now: fork this and swap `@supabase/ssr` for `drizzle-orm` + `@neondatabase/serverless`, add Clerk or NextAuth.
+Remaining = approved − committed − actual. Calculations use integer cents. Dashboard queries paginate beyond Supabase's default row limit. Expenses in categories without a budget still count. Deleting a budget preserves expenses; deleting a category is blocked while it has budgets or expenses. Month filtering uses the stored first-of-month date; the initial month follows Asia/Kuala_Lumpur.

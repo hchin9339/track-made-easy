@@ -28,10 +28,14 @@ export async function POST(request: Request) {
     };
 
     if (!priceId) {
-      return NextResponse.json({ error: "priceId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "priceId is required" },
+        { status: 400 },
+      );
     }
 
-    const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+    const origin =
+      request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
 
     // Look up existing Stripe customer ID if stored
     const { data: profile } = await supabase
@@ -51,6 +55,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error("[stripe/checkout]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

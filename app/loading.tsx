@@ -1,1 +1,14 @@
-export default function Loading(){return <div role="status" aria-label="Loading workspace" className="loading-state"><div className="skeleton skeleton-heading"/><div className="summary-cards">{[0,1,2,3].map(i=><div key={i} className="skeleton skeleton-card"/>)}</div><div className="skeleton skeleton-table"/><span className="sr-only">Loading your budget workspace…</span></div>;}
+export default function Loading() {
+  return (
+    <div role="status" aria-label="Loading workspace" className="loading-state">
+      <div className="skeleton skeleton-heading" />
+      <div className="summary-cards">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="skeleton skeleton-card" />
+        ))}
+      </div>
+      <div className="skeleton skeleton-table" />
+      <span className="sr-only">Loading your budget workspace…</span>
+    </div>
+  );
+}

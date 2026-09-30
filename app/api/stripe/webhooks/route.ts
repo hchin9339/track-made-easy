@@ -21,7 +21,10 @@ export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
-    return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing stripe-signature" },
+      { status: 400 },
+    );
   }
 
   let event: Stripe.Event;
@@ -76,7 +79,9 @@ export async function POST(request: Request) {
           stripe_customer_id: sub.customer as string,
           status: sub.status,
           price_id: sub.items.data[0]?.price.id,
-          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+          current_period_end: new Date(
+            sub.current_period_end * 1000,
+          ).toISOString(),
           cancel_at_period_end: sub.cancel_at_period_end,
           updated_at: new Date().toISOString(),
         });
@@ -96,7 +101,10 @@ export async function POST(request: Request) {
       // ── Payment failed — notify user ──────────────────────────────────────
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.warn("[stripe/webhooks] payment failed for customer:", invoice.customer);
+        console.warn(
+          "[stripe/webhooks] payment failed for customer:",
+          invoice.customer,
+        );
         // TODO: send email via Supabase Edge Function or Resend
         break;
       }

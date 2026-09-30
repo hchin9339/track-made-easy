@@ -1,10 +1,71 @@
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
-import {summarize} from '../lib/summary.ts';
-import type {Snapshot,Expense} from '../lib/types.ts';
-const expense=(amount:number,status:'committed'|'actual'):Expense=>({id:crypto.randomUUID(),category_id:'ads',budget_id:null,vendor:'Meta',description:'Campaign',amount,expense_date:'2026-09-30',month:'2026-09-01',status,notes:'Approved by superior'});
-const base:Snapshot={categories:[{id:'ads',name:'Digital Ads'}],budgets:[{id:'b',category_id:'ads',month:'2026-09-01',approved_amount:10000}],expenses:[]};
-test('PRD: approval transfers 3200 to actual, then 2000 committed leaves 4800',()=>{const first=expense(3200,'committed');assert.equal(summarize({...base,expenses:[first]}).totals.remaining,6800);first.status='actual';assert.deepEqual(summarize({...base,expenses:[first]}).totals,{approved:10000,committed:0,actual:3200,remaining:6800});assert.deepEqual(summarize({...base,expenses:[first,expense(2000,'committed')]}).totals,{approved:10000,committed:2000,actual:3200,remaining:4800});});
-test('unbudgeted and overbudget spend is included',()=>{const summary=summarize({...base,budgets:[],expenses:[expense(1,'actual')]});assert.equal(summary.totals.remaining,-1);assert.equal(summary.rows[0].hasBudget,false);});
-test('uses cents, including totals, rather than floating point accumulation',()=>{assert.equal(summarize({...base,expenses:[expense(.1,'actual'),expense(.2,'actual')]}).totals.actual,.3);});
-test('empty workspace totals are zero',()=>{assert.deepEqual(summarize({categories:[],budgets:[],expenses:[]}).totals,{approved:0,committed:0,actual:0,remaining:0});});
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { summarize } from "../lib/summary.ts";
+import type { Snapshot, Expense } from "../lib/types.ts";
+const expense = (amount: number, status: "committed" | "actual"): Expense => ({
+  id: crypto.randomUUID(),
+  category_id: "ads",
+  budget_id: null,
+  vendor: "Meta",
+  description: "Campaign",
+  amount,
+  expense_date: "2026-09-30",
+  month: "2026-09-01",
+  status,
+  notes: "Approved by superior",
+});
+const base: Snapshot = {
+  categories: [{ id: "ads", name: "Digital Ads" }],
+  budgets: [
+    {
+      id: "b",
+      category_id: "ads",
+      month: "2026-09-01",
+      approved_amount: 10000,
+    },
+  ],
+  expenses: [],
+};
+test("PRD: approval transfers 3200 to actual, then 2000 committed leaves 4800", () => {
+  const first = expense(3200, "committed");
+  assert.equal(
+    summarize({ ...base, expenses: [first] }).totals.remaining,
+    6800,
+  );
+  first.status = "actual";
+  assert.deepEqual(summarize({ ...base, expenses: [first] }).totals, {
+    approved: 10000,
+    committed: 0,
+    actual: 3200,
+    remaining: 6800,
+  });
+  assert.deepEqual(
+    summarize({ ...base, expenses: [first, expense(2000, "committed")] })
+      .totals,
+    { approved: 10000, committed: 2000, actual: 3200, remaining: 4800 },
+  );
+});
+test("unbudgeted and overbudget spend is included", () => {
+  const summary = summarize({
+    ...base,
+    budgets: [],
+    expenses: [expense(1, "actual")],
+  });
+  assert.equal(summary.totals.remaining, -1);
+  assert.equal(summary.rows[0].hasBudget, false);
+});
+test("uses cents, including totals, rather than floating point accumulation", () => {
+  assert.equal(
+    summarize({
+      ...base,
+      expenses: [expense(0.1, "actual"), expense(0.2, "actual")],
+    }).totals.actual,
+    0.3,
+  );
+});
+test("empty workspace totals are zero", () => {
+  assert.deepEqual(
+    summarize({ categories: [], budgets: [], expenses: [] }).totals,
+    { approved: 0, committed: 0, actual: 0, remaining: 0 },
+  );
+});

@@ -32,7 +32,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+    const origin =
+      request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
 
     const portalSession = await createPortalSession({
       customerId: profile.stripe_customer_id,
@@ -42,6 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: portalSession.url });
   } catch (err) {
     console.error("[stripe/portal]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
